@@ -5,8 +5,10 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.CompareFilter;
+import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.util.Bytes;
+import util.Util;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -15,22 +17,91 @@ public class HBaseConnector {
 
     public static Configuration config;
     public static final byte[] COLUMN_FAMILY = Bytes.toBytes("f");
+    public static final byte[] COLUMN_FAMILY1 = Bytes.toBytes("f1");
+
+    final static String HbaseMaster1 = "ip-10-185-143-196.ap-northeast-1.compute.internal";
+    final static String HbaseMaster2 = "ip-10-168-153-86.ap-northeast-1.compute.internal";
+    //ip-10-132-128-131.ap-northeast-1.compute.internal
+
+
     static {
         config = HBaseConfiguration.create();
         config.set("hbase.zookeeper.property.clientPort", "2181");
-        config.set("hbase.zookeeper.quorum", "ip-10-185-143-196.ap-northeast-1.compute.internal,ip-10-132-128-131.ap-northeast-1.compute.internal,ip-10-168-153-86.ap-northeast-1.compute.internal");
+        config.set("hbase.zookeeper.quorum", HbaseMaster1 +","+HbaseMaster2);
         //configuration.set("hbase.master", "hdfs://ip-10-185-143-196.ap-northeast-1.compute.internal:60000");
         config.set("hbase.rootdir", "hdfs://nameservice1/hbase");
     }
 
     public static void main(String[] args) throws IOException {
         //getAllRecord("user_behavior_log");
+        //SelectUserBehaviorLog();
+        SelectItemReco();
 
+    }
+
+    private static void SelectItemReco() throws IOException {
+        HTable hTable = new HTable(config, "item_reco");
+
+        Scan scan = new Scan();
+        scan.setMaxResultSize(10L);
+
+        SingleColumnValueFilter f1 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("udt"), CompareFilter.CompareOp.GREATER_OR_EQUAL, Bytes.toBytes("2016-05-03 00:00:00"));
+        SingleColumnValueFilter f2 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("sid"), CompareFilter.CompareOp.NOT_EQUAL, Bytes.toBytes("236"));
+        SingleColumnValueFilter f3 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("sid"), CompareFilter.CompareOp.NOT_EQUAL, Bytes.toBytes("168"));
+        SingleColumnValueFilter f4 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("sid"), CompareFilter.CompareOp.EQUAL, Bytes.toBytes("109"));
+        SingleColumnValueFilter f5 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("sid"), CompareFilter.CompareOp.EQUAL, Bytes.toBytes("110"));
+
+        FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
+
+        //scan.setTimeRange(1471255200000L, 1471600800000L);
+        //scan.setFilter(new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("sid"), CompareFilter.CompareOp.EQUAL, Bytes.toBytes("109")));
+        filterList.addFilter(f1);
+        //filterList.addFilter(f2);
+        //filterList.addFilter(f3);
+        filterList.addFilter(f4);
+        filterList.addFilter(f5);
+        scan.setFilter(filterList);
+
+        ResultScanner resultScanner = hTable.getScanner(scan);
+
+        for (Result result : resultScanner) {
+            //System.out.println("##################################################################################"+result);
+            for (KeyValue kv : result.raw()) {
+                //System.out.println("Family - "+Bytes.toString(kv.getFamily()));
+                //System.out.println("Qualifier - "+Bytes.toString(kv.getQualifier() ));
+                //System.out.println("_______________________________");
+                if(kv.toString().indexOf("f1:udt")> -1 || kv.toString().indexOf("f1:sid")> -1) {
+                    //if(Bytes.toString(kv.getValue()).indexOf("2016-05") >-1 || Bytes.toString(kv.getValue()).indexOf("2016-06") >-1) {
+                        //System.out.println("kv:" + kv);
+                        //System.out.println("Key:"+Bytes.toString(kv.getKey()));
+                        System.out.println("Value:" + Bytes.toString(kv.getValue()));
+                    //}
+                }
+                //System.out.println("getRow : " +Bytes.toString(kv.getRow()));
+
+            }
+
+            /*System.out.println("0:"+r);
+            System.out.println("1:" + r.getValue(COLUMN_FAMILY1, Bytes.toBytes("sid")));
+            System.out.println("1:" + (r.getValue(COLUMN_FAMILY1, Bytes.toBytes("sid"))).toString());
+            System.out.println("2:" + r.getValue(COLUMN_FAMILY1, Bytes.toBytes("iid")));
+            System.out.println("3:" + r.getValue(COLUMN_FAMILY1, Bytes.toBytes("nid")));
+            System.out.println("4:" + r.getValue(COLUMN_FAMILY1, Bytes.toBytes("cid")));*/
+
+            //Integer sid = Bytes.toInt(r.getValue(COLUMN_FAMILY, Bytes.toBytes("18")));
+            //int cid = Bytes.toInt(r.getValue(COLUMN_FAMILY, Bytes.toBytes("cid")));
+
+            //System.out.println(String.format("sid : %d", sid));
+            //System.out.println(String.format("sid : %d, ucd : %d", sid, cid));
+        }
+    }
+
+    public static void SelectUserBehaviorLog() throws IOException {
         HTable hTable = new HTable(config, "user_behavior_log");
 
         Scan scan = new Scan();
         scan.setMaxResultSize(10L);
-        scan.setTimeRange(1464739200000L, 1464739260000L); //01 Jun 2016 00:00:00 GMT ~ 01 Jun 2016 00:01:00 GMT
+        //scan.setTimeRange(1464739200000L, 1464739260000L); //01 Jun 2016 00:00:00 GMT ~ 01 Jun 2016 00:01:00 GMT
         scan.setFilter(new SingleColumnValueFilter(COLUMN_FAMILY, Bytes.toBytes("sid"), CompareFilter.CompareOp.EQUAL, Bytes.toBytes(1628)));
 
         ResultScanner resultScanner = hTable.getScanner(scan);
