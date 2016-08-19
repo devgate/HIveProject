@@ -4,11 +4,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.CompareFilter;
-import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
-import util.Util;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -45,11 +42,20 @@ public class HBaseConnector {
         Scan scan = new Scan();
         scan.setMaxResultSize(10L);
 
-        SingleColumnValueFilter f1 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("udt"), CompareFilter.CompareOp.GREATER_OR_EQUAL, Bytes.toBytes("2016-05-03 00:00:00"));
+//        RowFilter filter = new RowFilter(CompareFilter.CompareOp.EQUAL,new BinaryComparator(Bytes.toBytes(myfeatureId)) );
+//        filterList.addFilter(filter);
+
+        final byte[] rowKey = new byte[] { (byte)0xe0, 0x4f, (byte)0xd0,
+                0x20, (byte)0xea, 0x3a, 0x69, 0x10, (byte)0xa2, (byte)0xd8, 0x08, 0x00, 0x2b,
+                0x30, 0x30, (byte)0x9d };
+
+
+        SingleColumnValueFilter f1 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("udt"), CompareFilter.CompareOp.GREATER_OR_EQUAL, Bytes.toBytes("2016-07-03 00:00:00"));
         SingleColumnValueFilter f2 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("sid"), CompareFilter.CompareOp.NOT_EQUAL, Bytes.toBytes("236"));
         SingleColumnValueFilter f3 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("sid"), CompareFilter.CompareOp.NOT_EQUAL, Bytes.toBytes("168"));
         SingleColumnValueFilter f4 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("sid"), CompareFilter.CompareOp.EQUAL, Bytes.toBytes("109"));
         SingleColumnValueFilter f5 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("sid"), CompareFilter.CompareOp.EQUAL, Bytes.toBytes("110"));
+        SingleColumnValueFilter f6 = new SingleColumnValueFilter(COLUMN_FAMILY1, Bytes.toBytes("sid"), CompareFilter.CompareOp.EQUAL, Bytes.toBytes("84"));
 
         FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
 
@@ -58,14 +64,19 @@ public class HBaseConnector {
         filterList.addFilter(f1);
         //filterList.addFilter(f2);
         //filterList.addFilter(f3);
-        filterList.addFilter(f4);
-        filterList.addFilter(f5);
+        //filterList.addFilter(f4);
+        //filterList.addFilter(f5);
+        //filterList.addFilter(f6);
         scan.setFilter(filterList);
 
         ResultScanner resultScanner = hTable.getScanner(scan);
 
         for (Result result : resultScanner) {
-            //System.out.println("##################################################################################"+result);
+            byte[] rowKey2 = result.getRow().clone();
+            //System.out.println("####################"+ Bytes.toString(rowKey2) + "##############"+);
+            byte[] rowKey3 = new byte[] { (byte)rowKey2[0], (byte)rowKey2[1], (byte)rowKey2[2] };
+
+            System.out.println("##################################################################################"+ Bytes.toString(rowKey3));
             for (KeyValue kv : result.raw()) {
                 //System.out.println("Family - "+Bytes.toString(kv.getFamily()));
                 //System.out.println("Qualifier - "+Bytes.toString(kv.getQualifier() ));
